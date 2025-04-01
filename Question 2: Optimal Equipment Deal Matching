@@ -1,0 +1,64 @@
+import java.util.*;
+
+public class EquipmentDealMatching {
+
+    public static List<Integer> matchRequests(List<String[]> requests, List<String[]> sellers) {
+        
+        Map<String, PriorityQueue<Integer>> equipmentSellers = new HashMap<>();
+
+        
+        for (String[] seller : sellers) {
+            String equipment = seller[0];
+            int price = Integer.parseInt(seller[1]);
+
+            equipmentSellers
+                .computeIfAbsent(equipment, k -> new PriorityQueue<>())
+                .offer(price);
+        }
+
+        List<Integer> result = new ArrayList<>();
+
+        
+        for (String[] request : requests) {
+            String equipment = request[0];
+            int maxPrice = Integer.parseInt(request[1]);
+
+            PriorityQueue<Integer> available = equipmentSellers.getOrDefault(equipment, new PriorityQueue<>());
+              
+              Integer matchedPrice = null;
+              List<Integer> temp = new ArrayList<>();
+  
+              while (!available.isEmpty()) {
+                  int price = available.poll();
+                  if (price <= maxPrice) {
+                      matchedPrice = price;
+                      break;
+                  } else {
+                      temp.add(price);
+                  }
+              }
+  
+              
+              available.addAll(temp);
+  
+              result.add(matchedPrice);  
+          }
+  
+          return result;
+      }
+      public static void main(String[] args) {
+        List<String[]> requests = Arrays.asList(
+                new String[]{"excavator", "50000"},
+                new String[]{"bulldozer", "70000"}
+        );
+
+        List<String[]> sellers = Arrays.asList(
+                new String[]{"excavator", "45000"},
+                new String[]{"bulldozer", "68000"},
+                new String[]{"excavator", "48000"}
+        );
+
+        List<Integer> output = matchRequests(requests, sellers);
+        System.out.println("Matched Prices: " + output);
+}
+}
