@@ -1,0 +1,85 @@
+import java.util.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+public class MaintenanceLogAnalysis {
+
+    public static List<Integer> processQueries(
+            List<LogEntry> maintenanceLogs,
+            List<String[]> queries) {
+
+        
+        maintenanceLogs.sort(Comparator.comparing(log -> log.date));
+
+        
+        TreeMap<LocalDate, Integer> dateIndexMap = new TreeMap<>();
+        List<LocalDate> sortedDates = new ArrayList<>();
+        List<Integer> prefixSums = new ArrayList<>();
+
+        int cumulativeSum = 0;
+        for (LogEntry log : maintenanceLogs) {
+            if (!dateIndexMap.containsKey(log.date)) {
+                sortedDates.add(log.date);
+                dateIndexMap.put(log.date, sortedDates.size() - 1);
+                prefixSums.add(cumulativeSum);  
+            }
+            cumulativeSum += log.cost;
+            int idx = dateIndexMap.get(log.date);
+            prefixSums.set(idx, prefixSums.get(idx) + log.cost);
+        }
+         
+         for (int i = 1; i < prefixSums.size(); i++) {
+            prefixSums.set(i, prefixSums.get(i - 1) + prefixSums.get(i));
+        }
+
+        
+        List<Integer> results = new ArrayList<>();
+        for (String[] q : queries) {
+            LocalDate start = LocalDate.parse(q[0]);
+            LocalDate end = LocalDate.parse(q[1]);
+
+            LocalDate fromDate = dateIndexMap.ceilingKey(start);
+            LocalDate toDate = dateIndexMap.floorKey(end);
+
+            if (fromDate == null || toDate == null || fromDate.isAfter(toDate)) {
+                results.add(0);
+                continue;
+            }
+
+            int fromIdx = dateIndexMap.get(fromDate);
+            int toIdx = dateIndexMap.get(toDate);
+            int sum = prefixSums.get(toIdx) - (fromIdx > 0 ? prefixSums.get(fromIdx - 1) : 0);
+            results.add(sum);
+        }
+        return results;
+    }
+
+    
+    public static class LogEntry {
+        int equipmentId;
+        LocalDate date;
+        int cost;
+
+        LogEntry(int equipmentId, String dateStr, int cost) {
+            this.equipmentId = equipmentId;
+            this.date = LocalDate.parse(dateStr, DateTimeFormatter.ISO_DATE);
+            this.cost = cost;
+        }
+    }
+
+    public static void main(String[] args) {
+        List<LogEntry> maintenanceLogs = Arrays.asList(
+            new LogEntry(101, "2024-01-01", 500),
+            new LogEntry(102, "2024-01-10", 300),
+            new LogEntry(101, "2024-01-15", 700)
+        );
+
+        List<String[]> queries = Arrays.asList(
+            new String[]{"2024-01-01", "2024-01-10"},
+            new String[]{"2024-01-01", "2024-01-15"}
+            );
+
+            List<Integer> output = processQueries(maintenanceLogs, queries);
+            System.out.println("Maintenance Cost Results: " + output);
+    }
+    }
